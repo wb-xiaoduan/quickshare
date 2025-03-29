@@ -25,10 +25,10 @@ async function initDatabase() {
         // 创建页面表
         await connection.query(`
       CREATE TABLE IF NOT EXISTS pages (
-        id VARCHAR(255) PRIMARY KEY,
+        id VARCHAR(191) PRIMARY KEY,
         html_content LONGTEXT NOT NULL,
         created_at BIGINT NOT NULL,
-        password VARCHAR(255),
+        password VARCHAR(191),
         is_protected TINYINT DEFAULT 0,
         code_type VARCHAR(50) DEFAULT 'html'
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
