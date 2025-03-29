@@ -21,7 +21,147 @@ function renderHtml(content) {
         content.trim().startsWith("<!DOCTYPE html>") ||
         content.trim().startsWith("<html")
     ) {
-        return content;
+        // 为完整HTML文档添加右键导出功能
+        const modifiedContent = content.replace(
+            "</head>",
+            `
+        <style>
+          .context-menu {
+            display: none;
+            position: fixed;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 8px 0;
+            z-index: 10000;
+          }
+          
+          .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+          }
+          
+          .context-menu-item:hover {
+            background-color: #f2f2f2;
+          }
+          
+          @media (prefers-color-scheme: dark) {
+            .context-menu {
+              background-color: #2a2a2a;
+              border-color: #444;
+            }
+            
+            .context-menu-item {
+              color: #e5e7eb;
+            }
+            
+            .context-menu-item:hover {
+              background-color: #3a3a3a;
+            }
+          }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        </head>`
+        );
+
+        // 在body结束前添加右键菜单和JS函数
+        return modifiedContent.replace(
+            "</body>",
+            `
+        <div id="context-menu" class="context-menu">
+          <div class="context-menu-item" id="export-png">导出为PNG</div>
+        </div>
+        
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            // 在整个document上监听右键事件
+            const contextMenu = document.getElementById('context-menu');
+            const exportPng = document.getElementById('export-png');
+            
+            // 阻止默认右键菜单
+            document.addEventListener('contextmenu', function(e) {
+              e.preventDefault();
+              
+              // 显示自定义右键菜单
+              contextMenu.style.display = 'block';
+              
+              // 计算菜单位置，确保不超出视窗
+              const menuWidth = 150; // 菜单估计宽度
+              const menuHeight = 40; // 菜单估计高度
+              
+              // 确保菜单不会超出视窗右侧
+              let leftPos = e.pageX;
+              if (leftPos + menuWidth > window.innerWidth) {
+                leftPos = window.innerWidth - menuWidth - 10;
+              }
+              
+              // 确保菜单不会超出视窗底部
+              let topPos = e.pageY;
+              if (topPos + menuHeight > window.innerHeight) {
+                topPos = window.innerHeight - menuHeight - 10;
+              }
+              
+              contextMenu.style.left = leftPos + 'px';
+              contextMenu.style.top = topPos + 'px';
+            });
+            
+            // 点击页面其他区域关闭菜单
+            document.addEventListener('click', function() {
+              contextMenu.style.display = 'none';
+            });
+            
+            // 导出PNG功能
+            exportPng.addEventListener('click', function() {
+              try {
+                // 确保html2canvas已加载
+                if (typeof html2canvas === 'undefined') {
+                  alert('导出工具未加载，请刷新页面重试');
+                  return;
+                }
+                
+                // 先隐藏右键菜单
+                contextMenu.style.display = 'none';
+                
+                // 获取要截图的元素（整个页面）
+                const targetElement = document.body;
+                
+                // 开始截图
+                setTimeout(function() {
+                  html2canvas(targetElement, {
+                    scale: 2, // 提高清晰度
+                    useCORS: true, // 使用CORS加载跨域图片
+                    logging: false,
+                    allowTaint: true
+                  }).then(function(canvas) {
+                    // 创建下载链接
+                    const imgData = canvas.toDataURL('image/png');
+                    const fileName = 'html-export-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+                    
+                    const downloadLink = document.createElement('a');
+                    downloadLink.download = fileName;
+                    downloadLink.href = imgData;
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                  }).catch(function(error) {
+                    console.error('导出失败:', error);
+                    alert('导出失败: ' + error.message);
+                  });
+                }, 100); // 短暂延迟，确保UI更新
+              } catch (error) {
+                console.error('导出PNG失败:', error);
+                alert('导出PNG失败: ' + error.message);
+              }
+            });
+          });
+        </script>
+        </body>`
+        );
     }
 
     // u5982u679cu4e0du662fu5b8cu6574u7684HTMLu6587u6863uff0cu6dfbu52a0u57fau672cu7684HTMLu7ed3u6784
@@ -47,6 +187,8 @@ function renderHtml(content) {
       
       <link rel="stylesheet" href="/css/styles.css">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+      <!-- 预加载html2canvas库 -->
+      <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
       <style>
         body {
           font-family: 'Roboto', sans-serif;
@@ -62,7 +204,32 @@ function renderHtml(content) {
           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
           padding: 30px;
           margin-top: 20px;
+          position: relative;
         }
+        
+        .context-menu {
+          display: none;
+          position: fixed;
+          background-color: white;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          padding: 8px 0;
+          z-index: 10000;
+        }
+        
+        .context-menu-item {
+          padding: 8px 16px;
+          cursor: pointer;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          font-size: 14px;
+          color: #333;
+        }
+        
+        .context-menu-item:hover {
+          background-color: #f2f2f2;
+        }
+        
         @media (prefers-color-scheme: dark) {
           body {
             background-color: #1a1a1a;
@@ -72,18 +239,127 @@ function renderHtml(content) {
             background-color: #2a2a2a;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
           }
+          
+          .context-menu {
+            background-color: #2a2a2a;
+            border-color: #444;
+          }
+          
+          .context-menu-item {
+            color: #e5e7eb;
+          }
+          
+          .context-menu-item:hover {
+            background-color: #3a3a3a;
+          }
         }
       </style>
     </head>
     <body>
-      <div class="container">
+      <div id="content-container" class="container">
         ${content}
       </div>
+      
+      <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" id="export-png">导出为PNG</div>
+      </div>
+      
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
       <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('DOM内容加载完成，初始化功能');
+          
+          // 代码高亮
           document.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
+          });
+          
+          // 右键菜单功能
+          const contentContainer = document.getElementById('content-container');
+          const contextMenu = document.getElementById('context-menu');
+          const exportPng = document.getElementById('export-png');
+          
+          if (!contextMenu || !exportPng) {
+            console.error('右键菜单元素未找到');
+            return;
+          }
+          
+          console.log('右键菜单元素已找到，设置事件监听');
+          
+          // 阻止默认右键菜单
+          document.addEventListener('contextmenu', function(e) {
+            console.log('触发右键事件');
+            e.preventDefault();
+            
+            // 显示自定义右键菜单
+            contextMenu.style.display = 'block';
+            
+            // 计算菜单位置，确保不超出视窗
+            const menuWidth = 150; // 菜单估计宽度
+            const menuHeight = 40; // 菜单估计高度
+            
+            // 确保菜单不会超出视窗右侧
+            let leftPos = e.pageX;
+            if (leftPos + menuWidth > window.innerWidth) {
+              leftPos = window.innerWidth - menuWidth - 10;
+            }
+            
+            // 确保菜单不会超出视窗底部
+            let topPos = e.pageY;
+            if (topPos + menuHeight > window.innerHeight) {
+              topPos = window.innerHeight - menuHeight - 10;
+            }
+            
+            contextMenu.style.left = leftPos + 'px';
+            contextMenu.style.top = topPos + 'px';
+          });
+          
+          // 点击页面其他区域关闭菜单
+          document.addEventListener('click', function() {
+            contextMenu.style.display = 'none';
+          });
+          
+          // 导出PNG功能
+          exportPng.addEventListener('click', function() {
+            console.log('点击导出按钮');
+            try {
+              console.log('html2canvas可用性:', typeof html2canvas !== 'undefined');
+              
+              // 先隐藏右键菜单
+              contextMenu.style.display = 'none';
+              
+              // 添加短暂延迟，确保UI更新
+              setTimeout(function() {
+                // 仅导出内容容器
+                html2canvas(contentContainer, {
+                  scale: 2, // 提高清晰度
+                  useCORS: true, // 使用CORS加载跨域图片
+                  backgroundColor: window.getComputedStyle(contentContainer).backgroundColor,
+                  logging: true, // 开启日志以便调试
+                  allowTaint: true
+                }).then(function(canvas) {
+                  console.log('Canvas创建成功，尺寸:', canvas.width, 'x', canvas.height);
+                  // 创建下载链接
+                  const imgData = canvas.toDataURL('image/png');
+                  const fileName = 'html-export-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+                  
+                  const downloadLink = document.createElement('a');
+                  downloadLink.download = fileName;
+                  downloadLink.href = imgData;
+                  downloadLink.style.display = 'none';
+                  document.body.appendChild(downloadLink);
+                  downloadLink.click();
+                  document.body.removeChild(downloadLink);
+                  console.log('导出完成');
+                }).catch(function(error) {
+                  console.error('导出失败:', error);
+                  alert('导出失败: ' + error.message);
+                });
+              }, 100); // 短暂延迟，确保UI更新
+            } catch (error) {
+              console.error('导出PNG失败:', error);
+              alert('导出PNG失败: ' + error.message);
+            }
           });
         });
       </script>
@@ -522,8 +798,25 @@ function renderSvg(content) {
             
             // 显示自定义右键菜单
             contextMenu.style.display = 'block';
-            contextMenu.style.left = e.pageX + 'px';
-            contextMenu.style.top = e.pageY + 'px';
+            
+            // 计算菜单位置，确保不超出视窗
+            const menuWidth = 150; // 菜单估计宽度
+            const menuHeight = 40; // 菜单估计高度
+            
+            // 确保菜单不会超出视窗右侧
+            let leftPos = e.pageX;
+            if (leftPos + menuWidth > window.innerWidth) {
+              leftPos = window.innerWidth - menuWidth - 10;
+            }
+            
+            // 确保菜单不会超出视窗底部
+            let topPos = e.pageY;
+            if (topPos + menuHeight > window.innerHeight) {
+              topPos = window.innerHeight - menuHeight - 10;
+            }
+            
+            contextMenu.style.left = leftPos + 'px';
+            contextMenu.style.top = topPos + 'px';
           });
           
           // 点击页面其他区域关闭菜单
@@ -536,89 +829,95 @@ function renderSvg(content) {
             if (!svg) return;
             
             try {
-              // 获取SVG原始尺寸
-              let svgWidth, svgHeight;
+              // 先隐藏右键菜单
+              contextMenu.style.display = 'none';
               
-              // 优先使用SVG本身的width和height属性
-              if (svg.getAttribute('width') && svg.getAttribute('height')) {
-                svgWidth = parseFloat(svg.getAttribute('width'));
-                svgHeight = parseFloat(svg.getAttribute('height'));
-              } else if (svg.viewBox.baseVal && svg.viewBox.baseVal.width > 0) {
-                // 其次使用viewBox
-                svgWidth = svg.viewBox.baseVal.width;
-                svgHeight = svg.viewBox.baseVal.height;
-              } else {
-                // 最后才使用getBoundingClientRect
-                const rect = svg.getBoundingClientRect();
-                svgWidth = rect.width;
-                svgHeight = rect.height;
-              }
-              
-              // 确保有最小尺寸
-              svgWidth = Math.max(svgWidth, 100);
-              svgHeight = Math.max(svgHeight, 100);
-              
-              // 创建Canvas，使用合适的尺寸
-              const canvas = document.createElement('canvas');
-              
-              // 根据SVG原始比例设置Canvas尺寸，但确保不超过最大值
-              const maxSize = 4000; // 最大尺寸限制
-              let scale = 2; // 默认2倍缩放提高清晰度
-              
-              // 调整缩放比例，确保不超过最大限制
-              if (svgWidth * scale > maxSize || svgHeight * scale > maxSize) {
-                scale = Math.min(maxSize / svgWidth, maxSize / svgHeight);
-              }
-              
-              canvas.width = svgWidth * scale;
-              canvas.height = svgHeight * scale;
-              const ctx = canvas.getContext('2d');
-              
-              // 设置透明背景
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              
-              // 创建SVG数据URL
-              const data = new XMLSerializer().serializeToString(svg);
-              // 修复SVG的XLink命名空间问题
-              const fixedSvgData = data.replace(/NS\d+:href/g, 'xlink:href');
-              const DOMURL = window.URL || window.webkitURL || window;
-              const svgBlob = new Blob([fixedSvgData], {type: 'image/svg+xml;charset=utf-8'});
-              const url = DOMURL.createObjectURL(svgBlob);
-              const img = new Image();
-              
-              // 图片加载完成后绘制到Canvas
-              img.onload = function() {
-                console.log('Image loaded: ' + img.width + 'x' + img.height + ', Canvas: ' + canvas.width + 'x' + canvas.height);
-                // 重置上下文变换
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                // 清除画布
+              // 添加短暂延迟，确保UI更新
+              setTimeout(function() {
+                // 获取SVG原始尺寸
+                let svgWidth, svgHeight;
+                
+                // 优先使用SVG本身的width和height属性
+                if (svg.getAttribute('width') && svg.getAttribute('height')) {
+                  svgWidth = parseFloat(svg.getAttribute('width'));
+                  svgHeight = parseFloat(svg.getAttribute('height'));
+                } else if (svg.viewBox.baseVal && svg.viewBox.baseVal.width > 0) {
+                  // 其次使用viewBox
+                  svgWidth = svg.viewBox.baseVal.width;
+                  svgHeight = svg.viewBox.baseVal.height;
+                } else {
+                  // 最后才使用getBoundingClientRect
+                  const rect = svg.getBoundingClientRect();
+                  svgWidth = rect.width;
+                  svgHeight = rect.height;
+                }
+                
+                // 确保有最小尺寸
+                svgWidth = Math.max(svgWidth, 100);
+                svgHeight = Math.max(svgHeight, 100);
+                
+                // 创建Canvas，使用合适的尺寸
+                const canvas = document.createElement('canvas');
+                
+                // 根据SVG原始比例设置Canvas尺寸，但确保不超过最大值
+                const maxSize = 4000; // 最大尺寸限制
+                let scale = 2; // 默认2倍缩放提高清晰度
+                
+                // 调整缩放比例，确保不超过最大限制
+                if (svgWidth * scale > maxSize || svgHeight * scale > maxSize) {
+                  scale = Math.min(maxSize / svgWidth, maxSize / svgHeight);
+                }
+                
+                canvas.width = svgWidth * scale;
+                canvas.height = svgHeight * scale;
+                const ctx = canvas.getContext('2d');
+                
+                // 设置透明背景
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                // 重新缩放上下文
-                ctx.scale(scale, scale);
-                // 绘制图像
-                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-                DOMURL.revokeObjectURL(url);
                 
-                // 创建下载链接
-                const imgURI = canvas.toDataURL('image/png');
-                const fileName = 'svg-export-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+                // 创建SVG数据URL
+                const data = new XMLSerializer().serializeToString(svg);
+                // 修复SVG的XLink命名空间问题
+                const fixedSvgData = data.replace(/NS\d+:href/g, 'xlink:href');
+                const DOMURL = window.URL || window.webkitURL || window;
+                const svgBlob = new Blob([fixedSvgData], {type: 'image/svg+xml;charset=utf-8'});
+                const url = DOMURL.createObjectURL(svgBlob);
+                const img = new Image();
                 
-                const downloadLink = document.createElement('a');
-                downloadLink.download = fileName;
-                downloadLink.href = imgURI;
-                downloadLink.style.display = 'none';
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-              };
-              
-              // 错误处理
-              img.onerror = function(e) {
-                console.error('图片加载错误:', e);
-                alert('SVG加载失败，可能是SVG格式有问题。尝试使用浏览器自带的"另存为"功能。');
-              };
-              
-              img.src = url;
+                // 图片加载完成后绘制到Canvas
+                img.onload = function() {
+                  console.log('Image loaded: ' + img.width + 'x' + img.height + ', Canvas: ' + canvas.width + 'x' + canvas.height);
+                  // 重置上下文变换
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
+                  // 清除画布
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  // 重新缩放上下文
+                  ctx.scale(scale, scale);
+                  // 绘制图像
+                  ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+                  DOMURL.revokeObjectURL(url);
+                  
+                  // 创建下载链接
+                  const imgURI = canvas.toDataURL('image/png');
+                  const fileName = 'svg-export-' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.png';
+                  
+                  const downloadLink = document.createElement('a');
+                  downloadLink.download = fileName;
+                  downloadLink.href = imgURI;
+                  downloadLink.style.display = 'none';
+                  document.body.appendChild(downloadLink);
+                  downloadLink.click();
+                  document.body.removeChild(downloadLink);
+                };
+                
+                // 错误处理
+                img.onerror = function(e) {
+                  console.error('图片加载错误:', e);
+                  alert('SVG加载失败，可能是SVG格式有问题。尝试使用浏览器自带的"另存为"功能。');
+                };
+                
+                img.src = url;
+              }, 100); // 短暂延迟，确保UI更新
             } catch (error) {
               console.error('导出PNG失败:', error);
               alert('导出PNG失败: ' + error.message);

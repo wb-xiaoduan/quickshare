@@ -23,8 +23,25 @@ function detectCodeType(code) {
 
     const trimmedCode = code.trim();
 
-    // 检测SVG - 在其他检测之前进行，因为SVG也包含标签
-    // 放宽SVG检测条件，更准确地识别SVG内容
+    // 首先检测HTML (优先级最高)
+    if (
+        trimmedCode.startsWith("<!DOCTYPE html>") ||
+        trimmedCode.startsWith("<html") ||
+        (trimmedCode.indexOf("<html") > 0 &&
+            trimmedCode.indexOf("<html") < 50) ||
+        (trimmedCode.startsWith("<") &&
+            (trimmedCode.includes("<div") ||
+                trimmedCode.includes("<p") ||
+                trimmedCode.includes("<span") ||
+                trimmedCode.includes("<h1") ||
+                trimmedCode.includes("<body") ||
+                trimmedCode.includes("<head")))
+    ) {
+        console.log("[DEBUG] 检测到HTML内容");
+        return CODE_TYPES.HTML;
+    }
+
+    // 检测SVG - 在Markdown检测之前进行
     if (
         (trimmedCode.startsWith("<svg") || trimmedCode.includes("<svg")) &&
         (trimmedCode.includes("</svg>") || trimmedCode.endsWith("/>")) &&
@@ -75,21 +92,6 @@ function detectCodeType(code) {
     // 检查是否包含 SVG 代码块标记 - 修复此处的错误
     if (trimmedCode.includes("```svg")) {
         return CODE_TYPES.SVG; // 修改为返回SVG类型而不是MARKDOWN
-    }
-
-    // 检测HTML
-    if (
-        trimmedCode.startsWith("<!DOCTYPE html>") ||
-        trimmedCode.startsWith("<html") ||
-        (trimmedCode.startsWith("<") &&
-            (trimmedCode.includes("<div") ||
-                trimmedCode.includes("<p") ||
-                trimmedCode.includes("<span") ||
-                trimmedCode.includes("<h1") ||
-                trimmedCode.includes("<body") ||
-                trimmedCode.includes("<head")))
-    ) {
-        return CODE_TYPES.HTML;
     }
 
     // 检测纯文本

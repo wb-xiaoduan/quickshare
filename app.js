@@ -140,8 +140,10 @@ app.get("/view/:id", async (req, res) => {
         console.log(`检测到的内容类型: ${detectedType}`);
         console.log(`数据库中的内容类型: ${page.code_type}`);
 
-        // 使用检测到的类型，确保正确渲染
-        const contentType = validTypes.includes(detectedType)
+        // 使用数据库中存储的类型，如果有效的话，否则使用检测到的类型
+        const contentType = validTypes.includes(page.code_type)
+            ? page.code_type
+            : validTypes.includes(detectedType)
             ? detectedType
             : "html";
 
