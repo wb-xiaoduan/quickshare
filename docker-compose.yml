@@ -1,26 +1,53 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  html-go-express:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: html-go-express
-    restart: unless-stopped
-    ports:
-      - "8888:8888"
-    volumes:
-      - html-go-data:/usr/src/app/data
-    environment:
-      - NODE_ENV=production
-      - PORT=8888
-    networks:
-      - html-go-network
+    html-go-express:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: html-go-express
+        restart: unless-stopped
+        ports:
+            - "8888:8888"
+        volumes:
+            - html-go-data:/usr/src/app/data
+        environment:
+            - NODE_ENV=production
+            - PORT=8888
+            - DB_HOST=mysql
+            - DB_PORT=3306
+            - DB_USER=html_go
+            - DB_PASSWORD=html_go_password
+            - DB_NAME=html_go
+            - DB_CONNECTION_LIMIT=10
+        networks:
+            - html-go-network
+        depends_on:
+            - mysql
+
+    mysql:
+        image: mysql:8.0
+        container_name: html-go-mysql
+        restart: unless-stopped
+        environment:
+            - MYSQL_ROOT_PASSWORD=root_password
+            - MYSQL_DATABASE=html_go
+            - MYSQL_USER=html_go
+            - MYSQL_PASSWORD=html_go_password
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - html-go-network
+        ports:
+            - "3307:3306"
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 volumes:
-  html-go-data:
-    driver: local
+    html-go-data:
+        driver: local
+    mysql_data:
+        driver: local
 
 networks:
-  html-go-network:
-    driver: bridge
+    html-go-network:
+        driver: bridge

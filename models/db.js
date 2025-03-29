@@ -1,88 +1,103 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const mysql = require("mysql2/promise");
+const config = require("../config");
 
-// 数据库文件路径
-const dbPath = path.join(__dirname, '../db/html-go.db');
+// 创建MySQL连接池
+const pool = mysql.createPool({
+    host: config.db.host,
+    port: config.db.port,
+    user: config.db.user,
+    password: config.db.password,
+    database: config.db.database,
+    connectionLimit: config.db.connectionLimit,
+    waitForConnections: true,
+    queueLimit: 0,
+});
 
-// 确保数据库目录存在
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+/**
+ * 初始化数据库，创建必要的表
+ * @returns {Promise<void>}
+ */
+async function initDatabase() {
+    const connection = await pool.getConnection();
+    try {
+        console.log("正在初始化数据库...");
+
+        // 创建页面表
+        await connection.query(`
+      CREATE TABLE IF NOT EXISTS pages (
+        id VARCHAR(255) PRIMARY KEY,
+        html_content LONGTEXT NOT NULL,
+        created_at BIGINT NOT NULL,
+        password VARCHAR(255),
+        is_protected TINYINT DEFAULT 0,
+        code_type VARCHAR(50) DEFAULT 'html'
+      ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+    `);
+
+        console.log("数据库初始化成功");
+    } catch (error) {
+        console.error("数据库初始化失败:", error);
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
-// 创建数据库连接
-const db = new sqlite3.Database(dbPath);
-
-// 初始化数据库
-function initDatabase() {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      // 创建页面表
-      db.run(`
-        CREATE TABLE IF NOT EXISTS pages (
-          id TEXT PRIMARY KEY,
-          html_content TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          password TEXT,
-          is_protected INTEGER DEFAULT 0,
-          code_type TEXT DEFAULT 'html'
-        )
-      `, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          console.log('数据库初始化成功');
-          resolve();
-        }
-      });
-    });
-  });
+/**
+ * 执行查询并返回所有结果
+ * @param {string} sql SQL查询语句
+ * @param {Array} params 查询参数
+ * @returns {Promise<Array>} 查询结果数组
+ */
+async function query(sql, params = []) {
+    try {
+        const [rows] = await pool.query(sql, params);
+        return rows;
+    } catch (error) {
+        console.error("数据库查询错误:", error);
+        throw error;
+    }
 }
 
-// 执行查询的辅助函数
-function query(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
+/**
+ * 执行查询并返回单行结果
+ * @param {string} sql SQL查询语句
+ * @param {Array} params 查询参数
+ * @returns {Promise<Object|null>} 查询结果对象或null
+ */
+async function get(sql, params = []) {
+    try {
+        const [rows] = await pool.query(sql, params);
+        return rows.length > 0 ? rows[0] : null;
+    } catch (error) {
+        console.error("数据库单行查询错误:", error);
+        throw error;
+    }
 }
 
-// 执行单行查询的辅助函数
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row);
-      }
-    });
-  });
-}
-
-// 执行更新的辅助函数
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ id: this.lastID, changes: this.changes });
-      }
-    });
-  });
+/**
+ * 执行插入、更新或删除操作
+ * @param {string} sql SQL语句
+ * @param {Array} params 查询参数
+ * @returns {Promise<Object>} 包含affectedRows和insertId的结果对象
+ */
+async function run(sql, params = []) {
+    try {
+        const [result] = await pool.query(sql, params);
+        return {
+            id: result.insertId,
+            changes: result.affectedRows,
+        };
+    } catch (error) {
+        console.error("数据库执行错误:", error);
+        throw error;
+    }
 }
 
 module.exports = {
-  db,
-  initDatabase,
-  query,
-  get,
-  run
+    pool,
+    initDatabase,
+    query,
+    get,
+    run,
 };

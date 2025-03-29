@@ -1,38 +1,39 @@
 {
-  "name": "html-go-express",
-  "version": "1.0.0",
-  "description": "HTML代码分享工具 - Express版本",
-  "main": "app.js",
-  "scripts": {
-    "start": "NODE_ENV=production node --max-old-space-size=1024 app.js",
-    "dev": "NODE_ENV=development nodemon app.js",
-    "test": "NODE_ENV=test node app.js",
-    "prod": "NODE_ENV=production node --max-old-space-size=1024 app.js"
-  },
-  "keywords": [
-    "html",
-    "share",
-    "express",
-    "ejs"
-  ],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.4.2",
-    "body-parser": "^1.20.3",
-    "cors": "^2.8.5",
-    "crypto-js": "^4.2.0",
-    "dotenv": "^16.4.7",
-    "ejs": "^3.1.10",
-    "express": "^4.21.2",
-    "jsdom": "^26.0.0",
-    "marked": "^15.0.7",
-    "mermaid": "^11.6.0",
-    "mermaid-render": "^1.0.9",
-    "morgan": "^1.10.0",
-    "sqlite3": "^5.1.7"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.22"
-  }
+    "name": "html-go-express",
+    "version": "1.0.0",
+    "description": "HTML代码分享工具 - Express版本",
+    "main": "app.js",
+    "scripts": {
+        "start": "cross-env NODE_ENV=production node --max-old-space-size=1024 app.js",
+        "dev": "cross-env NODE_ENV=development nodemon app.js",
+        "test": "cross-env NODE_ENV=test node app.js",
+        "prod": "cross-env NODE_ENV=production node --max-old-space-size=1024 app.js"
+    },
+    "keywords": [
+        "html",
+        "share",
+        "express",
+        "ejs"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@mermaid-js/mermaid-cli": "^11.4.2",
+        "body-parser": "^1.20.3",
+        "cors": "^2.8.5",
+        "crypto-js": "^4.2.0",
+        "dotenv": "^16.4.7",
+        "ejs": "^3.1.10",
+        "express": "^4.21.2",
+        "jsdom": "^26.0.0",
+        "marked": "^15.0.7",
+        "mermaid": "^11.6.0",
+        "mermaid-render": "^1.0.9",
+        "morgan": "^1.10.0",
+        "mysql2": "^3.6.5"
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "nodemon": "^2.0.22"
+    }
 }
