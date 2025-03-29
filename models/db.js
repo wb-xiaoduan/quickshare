@@ -30,7 +30,8 @@ async function initDatabase() {
         created_at BIGINT NOT NULL,
         password VARCHAR(191),
         is_protected TINYINT DEFAULT 0,
-        code_type VARCHAR(50) DEFAULT 'html'
+        code_type VARCHAR(50) DEFAULT 'html',
+        title VARCHAR(255) DEFAULT '未命名页面'
       ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
     `);
 
