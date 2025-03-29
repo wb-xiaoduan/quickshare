@@ -80,6 +80,12 @@ app.get("/view/:id", async (req, res) => {
             });
         }
 
+        // 调试：输出特定ID的完整内容
+        if (id === "22fedb2") {
+            console.log("DEBUG - 完整SVG内容:");
+            console.log(page.html_content);
+        }
+
         // 检查是否需要密码验证
         if (page.is_protected === 1) {
             const { password } = req.query;

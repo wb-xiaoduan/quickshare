@@ -410,7 +410,7 @@ function renderSvg(content) {
       <style>
         body {
           margin: 0;
-          overflow: hidden;
+          padding: 10px;
           display: flex;
           justify-content: center;
           align-items: center;
@@ -420,12 +420,18 @@ function renderSvg(content) {
         
         #svg-container {
           position: relative;
+          width: 100%;
+          max-width: 100%;
+          text-align: center;
         }
         
         svg {
           max-width: 100%;
-          max-height: 100vh;
+          max-height: 90vh;
           height: auto;
+          width: auto;
+          margin: 0 auto;
+          display: inline-block;
         }
         
         .context-menu {
@@ -487,16 +493,31 @@ function renderSvg(content) {
           const contextMenu = document.getElementById('context-menu');
           const exportPng = document.getElementById('export-png');
           
-          // 确保SVG有viewBox属性，如果没有自动添加
-          if (svg && !svg.getAttribute('viewBox') && 
-              svg.getAttribute('width') && svg.getAttribute('height')) {
-            const width = svg.getAttribute('width');
-            const height = svg.getAttribute('height');
-            svg.setAttribute('viewBox', '0 0 ' + parseFloat(width) + ' ' + parseFloat(height));
+          // 检查SVG是否存在
+          if (svg) {
+            console.log('SVG found in the container');
+            
+            // 确保SVG有viewBox属性，如果没有自动添加
+            if (!svg.getAttribute('viewBox') && 
+                svg.getAttribute('width') && svg.getAttribute('height')) {
+              const width = svg.getAttribute('width');
+              const height = svg.getAttribute('height');
+              svg.setAttribute('viewBox', '0 0 ' + parseFloat(width) + ' ' + parseFloat(height));
+              console.log('Added viewBox attribute: 0 0 ' + parseFloat(width) + ' ' + parseFloat(height));
+            } else {
+              console.log('SVG viewBox: ' + (svg.getAttribute('viewBox') || 'not set'));
+              console.log('SVG width: ' + (svg.getAttribute('width') || 'not set'));
+              console.log('SVG height: ' + (svg.getAttribute('height') || 'not set'));
+            }
+          } else {
+            console.error('No SVG found in the container');
+            svgContainer.innerHTML = '<p style="color: red;">SVG加载失败或内容不是有效的SVG格式</p>' + svgContainer.innerHTML;
           }
           
           // 阻止默认右键菜单
           svgContainer.addEventListener('contextmenu', function(e) {
+            if (!svg) return; // 如果没有SVG，不显示自定义右键菜单
+            
             e.preventDefault();
             
             // 显示自定义右键菜单
@@ -568,8 +589,13 @@ function renderSvg(content) {
               // 图片加载完成后绘制到Canvas
               img.onload = function() {
                 console.log('Image loaded: ' + img.width + 'x' + img.height + ', Canvas: ' + canvas.width + 'x' + canvas.height);
-                // 绘制前缩放上下文以匹配所需尺寸
+                // 重置上下文变换
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // 重新缩放上下文
                 ctx.scale(scale, scale);
+                // 绘制图像
                 ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
                 DOMURL.revokeObjectURL(url);
                 
